@@ -1,4 +1,5 @@
 import syn_gen_with_docs as sgdocs
+import syn_gen_with_gensim  as sggen
 import syn_gen_with_kg_answers as sgans
 import syn_gen_with_googlenews as sgnews
 import json
@@ -18,7 +19,7 @@ def preprocess(terms):
                     subterm = subterm.split(':')[0]
                 new_terms.append(subterm.strip('**').strip('!!'))
         except:
-            print('EXCEPTION')
+            print(f"** Warning: Unfamiliar JSON object '{term}' in terms")
             continue
     return new_terms
 
@@ -42,7 +43,9 @@ def retrieve_words(file_name):
 
 def synonym_generation_master(file_name, pdf_file=None, pretrained_model = False, type = 'pdf'):
     words = retrieve_words(file_name)
-    if pretrained_model != False:
+    if type == 'gensim':
+        sggen.fetch_synonyms(words, file_name, pretrained_model)
+    elif pretrained_model != False:
         sgnews.fetch_synonyms(words, file_name, pretrained_model)
     elif pdf_file is None:
         sgans.fetch_synonyms(words, file_name)
@@ -56,17 +59,24 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--file_path', help='path for input json file')
+    parser.add_argument('--gensim_model', help='name of pretrained gensim model', default=None)
     parser.add_argument('--training_data_path', help='path for input pdf file or zip containing pdfs or the path to the pretrained model', default=None)
-    parser.add_argument('--training_data_type', help='type of training data, pdf or zip or pretrained', default='pdf')
+    parser.add_argument('--training_data_type', help='type of training data, pdf or zip, gensim or pretrained', default='pdf')
 
     _input_arguments = parser.parse_args()
 
-
+    gensim_model = _input_arguments.gensim_model
     file_name = _input_arguments.file_path
     training_data_path = _input_arguments.training_data_path 
     type = _input_arguments.training_data_type
+    
+    if type == 'gensim':
+        if not gensim_model:
+            parser.print_help()
+            sys.exit("\n** Error: --gensim_model not included")
+        synonym_generation_master(file_name, pretrained_model = gensim_model, type=type)
 
-    if type == 'pretrained':
+    elif type == 'pretrained':
         synonym_generation_master(file_name, pretrained_model = training_data_path)
     else:
         synonym_generation_master(file_name, pdf_file=training_data_path, type=type)

@@ -1,0 +1,6 @@
+__pycache__/
+*,pu[cod]
+*$py.class
+
+word2vec-GoogleNews-vectors/
+.DS_Store
